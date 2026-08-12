@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#12212b" />
+  <title>Add word · Wordnote</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #12212b;
+      --ink-soft: #243743;
+      --fog: #d7e0e6;
+      --paper: #f3efe6;
+      --accent: #c45c26;
+      --accent-deep: #9e4318;
+      --shadow: 0 18px 40px rgba(10, 18, 24, 0.28);
+      --radius: 18px;
+      --font-display: "Fraunces", Georgia, serif;
+      --font-body: "Manrope", sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+
+    body {
+      margin: 0;
+      color: var(--paper);
+      font-family: var(--font-body);
+      background: var(--ink);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .atmosphere {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background:
+        radial-gradient(ellipse 90% 60% at 10% -10%, rgba(196, 92, 38, 0.22), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 100% 0%, rgba(80, 130, 150, 0.18), transparent 50%),
+        linear-gradient(165deg, #0d1820 0%, #12212b 45%, #1a303c 100%);
+    }
+
+    .atmosphere::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.35;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      max-width: 42rem;
+      margin: 0 auto;
+    }
+
+    .brand {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--paper);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .nav {
+      display: flex;
+      gap: 0.35rem;
+    }
+
+    .nav a {
+      color: var(--fog);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.92rem;
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+    }
+
+    .nav a.is-active,
+    .nav a:hover {
+      background: rgba(243, 239, 230, 0.1);
+      color: var(--paper);
+    }
+
+    .page {
+      max-width: 42rem;
+      margin: 0 auto;
+      padding: 0.5rem 1.25rem 3rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: rgba(215, 224, 230, 0.7);
+    }
+
+    h1 {
+      margin: 0 0 0.65rem;
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 7vw, 2.75rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .lede {
+      margin: 0 0 1.5rem;
+      color: rgba(215, 224, 230, 0.88);
+      max-width: 38ch;
+      font-size: 1.02rem;
+    }
+
+    details.settings {
+      margin: 0 0 1.25rem;
+      border: 1px solid rgba(243, 239, 230, 0.14);
+      border-radius: 14px;
+      padding: 0.75rem 1rem 1rem;
+      background: rgba(243, 239, 230, 0.04);
+    }
+
+    details.settings summary {
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--fog);
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 0.85rem;
+    }
+
+    label.field {
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .field-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--fog);
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      border: 1px solid rgba(243, 239, 230, 0.18);
+      background: rgba(243, 239, 230, 0.06);
+      color: var(--paper);
+      border-radius: 14px;
+      padding: 0.9rem 1rem;
+      font: inherit;
+      font-size: 1.05rem;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: rgba(196, 92, 38, 0.7);
+      box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.2);
+    }
+
+    .hint {
+      margin: 0;
+      font-size: 0.82rem;
+      color: rgba(215, 224, 230, 0.65);
+    }
+
+    .add-form, .actions {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .actions {
+      grid-template-columns: 1fr 1fr;
+      margin-top: 0.75rem;
+    }
+
+    .btn {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      border-radius: 14px;
+      padding: 0.95rem 1.15rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease, background 0.2s ease, opacity 0.2s ease;
+    }
+
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.55; cursor: wait; }
+
+    .btn.primary { background: var(--accent); color: #fff8f2; }
+    .btn.primary:hover:not(:disabled) { background: var(--accent-deep); }
+    .btn.secondary { background: rgba(243, 239, 230, 0.14); color: var(--paper); }
+    .btn.ghost {
+      background: transparent;
+      color: var(--fog);
+      border: 1px solid rgba(243, 239, 230, 0.18);
+    }
+
+    .status {
+      min-height: 1.4em;
+      margin: 0.85rem 0 0;
+      font-size: 0.95rem;
+      color: var(--fog);
+    }
+
+    .status.is-ok { color: #8fd0ad; }
+    .status.is-err { color: #f0a0a0; }
+    .status.is-warn { color: #e6c07b; }
+
+    .meta {
+      margin: 0.35rem 0 0;
+      font-size: 0.85rem;
+      color: rgba(215, 224, 230, 0.7);
+    }
+
+    .preview {
+      margin-top: 1.25rem;
+      padding: 1.25rem 1.3rem;
+      border-radius: var(--radius);
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: var(--shadow);
+      display: none;
+    }
+
+    .preview.is-visible { display: block; }
+
+    .preview h2 {
+      margin: 0 0 0.35rem;
+      font-family: var(--font-display);
+      font-size: 1.7rem;
+      letter-spacing: -0.02em;
+    }
+
+    .preview .meaning {
+      margin: 0 0 1rem;
+      color: var(--ink-soft);
+    }
+
+    .preview blockquote {
+      margin: 0;
+      padding: 0.9rem 1rem;
+      border-left: 3px solid var(--accent);
+      background: rgba(18, 33, 43, 0.05);
+      border-radius: 0 12px 12px 0;
+    }
+
+    .preview blockquote p { margin: 0; }
+    .preview blockquote .zh {
+      margin-top: 0.35rem;
+      color: var(--ink-soft);
+    }
+
+    .file-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      margin-top: 0.75rem;
+    }
+
+    .file-row input[type="file"] { display: none; }
+
+    @media (max-width: 480px) {
+      .actions { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="add.html">Wordnote</a>
+    <nav class="nav">
+      <a href="add.html" class="is-active">Add</a>
+      <a href="study.html">Study</a>
+    </nav>
+  </header>
+
+  <main class="page">
+    <p class="eyebrow">Capture</p>
+    <h1>Note a word</h1>
+    <p class="lede">
+      Loads your existing <code>data/words.csv</code> when available, appends new words into it,
+      and only creates a fresh CSV if none is linked yet.
+    </p>
+
+    <details class="settings" id="settings">
+      <summary>API settings</summary>
+      <div class="settings-grid">
+        <label class="field">
+          <span class="field-label">API key</span>
+          <input id="api-key" type="password" placeholder="AI_GATEWAY_API_KEY or OpenRouter key" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span class="field-label">Base URL</span>
+          <input id="base-url" type="text" placeholder="https://ai-gateway.vercel.sh/v1" />
+        </label>
+        <label class="field">
+          <span class="field-label">Model</span>
+          <input id="model" type="text" placeholder="openai/gpt-4o-mini" />
+        </label>
+        <p class="hint">Same creds as xplore. Stored in localStorage on this device only — never put keys in git.</p>
+        <button type="button" id="save-settings" class="btn secondary">Save settings</button>
+      </div>
+    </details>
+
+    <form id="add-form" class="add-form" autocomplete="off">
+      <label class="field">
+        <span class="field-label">Word or phrase</span>
+        <input
+          id="word-input"
+          type="text"
+          enterkeyhint="go"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          placeholder="e.g. ephemeral"
+          required
+        />
+      </label>
+      <button type="submit" id="submit-btn" class="btn primary">Save with meaning</button>
+    </form>
+
+    <div class="actions">
+      <button type="button" id="link-btn" class="btn secondary">Use existing words.csv…</button>
+      <button type="button" id="download-btn" class="btn ghost">Download copy</button>
+      <label class="btn ghost" for="csv-file" id="load-label">Load CSV (read-only)…</label>
+      <input id="csv-file" type="file" accept=".csv,text/csv" />
+    </div>
+
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <p id="meta" class="meta"></p>
+
+    <article id="preview" class="preview">
+      <h2 id="preview-word"></h2>
+      <p id="preview-meaning" class="meaning"></p>
+      <blockquote>
+        <p id="preview-en"></p>
+        <p id="preview-zh" class="zh"></p>
+      </blockquote>
+    </article>
+  </main>
+
+  <script>
+    const CSV_URL = "data/words.csv";
+    const STORAGE_KEY = "wordnote.settings.v1";
+    const FIELDS = ["word", "meaning_zh", "example_en", "example_zh", "created_at"];
+
+    const defaults = {
+      apiKey: "",
+      baseUrl: "https://ai-gateway.vercel.sh/v1",
+      model: "openai/gpt-4o-mini",
+    };
+
+    const els = {
+      settings: document.getElementById("settings"),
+      apiKey: document.getElementById("api-key"),
+      baseUrl: document.getElementById("base-url"),
+      model: document.getElementById("model"),
+      saveSettings: document.getElementById("save-settings"),
+      form: document.getElementById("add-form"),
+      input: document.getElementById("word-input"),
+      submit: document.getElementById("submit-btn"),
+      linkBtn: document.getElementById("link-btn"),
+      download: document.getElementById("download-btn"),
+      csvFile: document.getElementById("csv-file"),
+      status: document.getElementById("status"),
+      meta: document.getElementById("meta"),
+      preview: document.getElementById("preview"),
+      previewWord: document.getElementById("preview-word"),
+      previewMeaning: document.getElementById("preview-meaning"),
+      previewEn: document.getElementById("preview-en"),
+      previewZh: document.getElementById("preview-zh"),
+    };
+
+    let words = [];
+    let csvLoaded = false; // true if we loaded an existing CSV
+    let fileHandle = null; // writable handle to existing words.csv (Chrome/Edge)
+    let settings = loadSettings();
+    const canWriteFile = typeof window.showOpenFilePicker === "function";
+
+    function loadSettings() {
+      try {
+        return { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") };
+      } catch {
+        return { ...defaults };
+      }
+    }
+
+    function persistSettings() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    }
+
+    function fillSettingsForm() {
+      els.apiKey.value = settings.apiKey || "";
+      els.baseUrl.value = settings.baseUrl || defaults.baseUrl;
+      els.model.value = settings.model || defaults.model;
+      if (!settings.apiKey) els.settings.open = true;
+    }
+
+    function setStatus(message, kind = "") {
+      els.status.textContent = message;
+      els.status.className = `status${kind ? ` is-${kind}` : ""}`;
+    }
+
+    function updateMeta() {
+      const source = fileHandle
+        ? "writing to linked words.csv"
+        : csvLoaded
+          ? "existing CSV loaded (download to update file)"
+          : "no existing CSV yet";
+      els.meta.textContent =
+        `${words.length} word${words.length === 1 ? "" : "s"} · ${source}` +
+        (settings.apiKey ? " · API key saved" : " · API key missing");
+    }
+
+    function showPreview(row) {
+      els.previewWord.textContent = row.word;
+      els.previewMeaning.textContent = row.meaning_zh;
+      els.previewEn.textContent = row.example_en;
+      els.previewZh.textContent = row.example_zh;
+      els.preview.classList.add("is-visible");
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+
+        if (inQuotes) {
+          if (ch === '"' && next === '"') {
+            cell += '"';
+            i++;
+          } else if (ch === '"') {
+            inQuotes = false;
+          } else {
+            cell += ch;
+          }
+          continue;
+        }
+
+        if (ch === '"') inQuotes = true;
+        else if (ch === ",") {
+          row.push(cell);
+          cell = "";
+        } else if (ch === "\n" || (ch === "\r" && next === "\n")) {
+          row.push(cell);
+          rows.push(row);
+          row = [];
+          cell = "";
+          if (ch === "\r") i++;
+        } else if (ch !== "\r") {
+          cell += ch;
+        }
+      }
+      if (cell.length || row.length) {
+        row.push(cell);
+        rows.push(row);
+      }
+      if (!rows.length) return [];
+
+      const headers = rows[0].map((h) => h.replace(/^\uFEFF/, "").trim());
+      return rows
+        .slice(1)
+        .filter((r) => r.some((c) => c && String(c).trim()))
+        .map((r) => {
+          const obj = {};
+          headers.forEach((h, i) => {
+            obj[h] = (r[i] || "").trim();
+          });
+          return obj;
+        })
+        .filter((o) => o.word);
+    }
+
+    function csvEscape(value) {
+      const s = String(value ?? "");
+      if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+      return s;
+    }
+
+    function toCsv(rows) {
+      const lines = [FIELDS.join(",")];
+      for (const row of rows) {
+        lines.push(FIELDS.map((f) => csvEscape(row[f] || "")).join(","));
+      }
+      return "\uFEFF" + lines.join("\n") + "\n";
+    }
+
+    function downloadCsv() {
+      const blob = new Blob([toCsv(words)], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "words.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function writeToLinkedFile() {
+      if (!fileHandle) return false;
+      const writable = await fileHandle.createWritable();
+      await writable.write(toCsv(words));
+      await writable.close();
+      return true;
+    }
+
+    /** Append-aware save: update linked/existing file when possible; otherwise create a download. */
+    async function persistCsv({ reason } = {}) {
+      if (fileHandle) {
+        await writeToLinkedFile();
+        return {
+          mode: "append",
+          message: `Appended to existing words.csv (${words.length} words).`,
+        };
+      }
+
+      // Existing deck loaded from hosted CSV / read-only file → download updated full file
+      if (csvLoaded && words.length) {
+        downloadCsv();
+        return {
+          mode: "append-download",
+          message:
+            `Appended in memory (${words.length} words) and downloaded updated words.csv — replace data/words.csv and commit.`,
+        };
+      }
+
+      // Nothing existed yet → create new CSV via download / save picker
+      if (typeof window.showSaveFilePicker === "function") {
+        try {
+          fileHandle = await window.showSaveFilePicker({
+            suggestedName: "words.csv",
+            types: [{ description: "CSV", accept: { "text/csv": [".csv"] } }],
+          });
+          await writeToLinkedFile();
+          csvLoaded = true;
+          return {
+            mode: "create",
+            message: `Created new words.csv and saved ${words.length} word(s). Later adds will append to this file.`,
+          };
+        } catch (err) {
+          if (err && err.name === "AbortError") {
+            downloadCsv();
+            return {
+              mode: "create-download",
+              message: "Created a new words.csv download (save canceled).",
+            };
+          }
+          throw err;
+        }
+      }
+
+      downloadCsv();
+      return {
+        mode: "create-download",
+        message: reason || `Created new words.csv (${words.length} word${words.length === 1 ? "" : "s"}).`,
+      };
+    }
+
+    async function linkExistingCsv() {
+      if (!canWriteFile) {
+        els.csvFile.click();
+        setStatus(
+          "This browser can’t write files in place. Load CSV, then each save will download an updated full file.",
+          "warn"
+        );
+        return;
+      }
+
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{ description: "CSV", accept: { "text/csv": [".csv"] } }],
+        });
+        const file = await handle.getFile();
+        words = parseCsv(await file.text());
+        fileHandle = handle;
+        csvLoaded = true;
+        updateMeta();
+        setStatus(`Linked existing ${file.name} (${words.length} words). New words will append here.`, "ok");
+      } catch (err) {
+        if (err && err.name === "AbortError") return;
+        setStatus(err.message || "Could not open CSV.", "err");
+      }
+    }
+
+    function findWord(word) {
+      const key = word.trim().toLowerCase();
+      return words.find((w) => (w.word || "").trim().toLowerCase() === key);
+    }
+
+    function extractJson(text) {
+      const trimmed = text.trim();
+      try {
+        return JSON.parse(trimmed);
+      } catch {
+        const match = trimmed.match(/\{[\s\S]*\}/);
+        if (!match) throw new Error("LLM did not return JSON");
+        return JSON.parse(match[0]);
+      }
+    }
+
+    async function enrichWord(word) {
+      if (!settings.apiKey) {
+        throw new Error("Add your API key in API settings first.");
+      }
+
+      const base = (settings.baseUrl || defaults.baseUrl).replace(/\/$/, "");
+      const model = settings.model || defaults.model;
+
+      const res = await fetch(`${base}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${settings.apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.3,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a bilingual vocabulary tutor. Always use Traditional Chinese (繁體中文), never Simplified. Reply with a single JSON object only, no markdown.",
+            },
+            {
+              role: "user",
+              content: `For the English word or phrase: ${JSON.stringify(word)}
+
+Return JSON with these keys:
+- meaning_zh: concise Traditional Chinese meaning (can include part of speech briefly)
+- example_en: one natural English example sentence using the word
+- example_zh: Traditional Chinese translation of that example sentence
+
+Keep meaning_zh short (under 40 Chinese characters if possible).`,
+            },
+          ],
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const msg =
+          data.error?.message ||
+          data.message ||
+          `API error HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+
+      const content = data.choices?.[0]?.message?.content || "";
+      const parsed = extractJson(content);
+      const meaning_zh = String(parsed.meaning_zh || "").trim();
+      const example_en = String(parsed.example_en || "").trim();
+      const example_zh = String(parsed.example_zh || "").trim();
+      if (!meaning_zh || !example_en || !example_zh) {
+        throw new Error("Incomplete LLM response");
+      }
+
+      return {
+        word: word.trim(),
+        meaning_zh,
+        example_en,
+        example_zh,
+        created_at: new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
+      };
+    }
+
+    els.saveSettings.addEventListener("click", () => {
+      settings = {
+        apiKey: els.apiKey.value.trim(),
+        baseUrl: els.baseUrl.value.trim() || defaults.baseUrl,
+        model: els.model.value.trim() || defaults.model,
+      };
+      persistSettings();
+      setStatus("Settings saved in this browser.", "ok");
+      updateMeta();
+    });
+
+    els.linkBtn.addEventListener("click", linkExistingCsv);
+
+    els.download.addEventListener("click", () => {
+      downloadCsv();
+      setStatus(
+        csvLoaded || words.length
+          ? "Downloaded full words.csv (includes all loaded + new words)."
+          : "Downloaded empty/new words.csv.",
+        "ok"
+      );
+    });
+
+    els.csvFile.addEventListener("change", async () => {
+      const file = els.csvFile.files && els.csvFile.files[0];
+      if (!file) return;
+      words = parseCsv(await file.text());
+      fileHandle = null; // read-only input can't write back
+      csvLoaded = true;
+      updateMeta();
+      setStatus(
+        `Loaded ${words.length} words from ${file.name}. Saves will download an updated full CSV (append in memory).`,
+        "ok"
+      );
+    });
+
+    els.form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const word = els.input.value.trim();
+      if (!word) return;
+
+      const existing = findWord(word);
+      if (existing) {
+        setStatus("Already in your deck — showing saved card.", "warn");
+        showPreview(existing);
+        return;
+      }
+
+      els.submit.disabled = true;
+      setStatus("Looking up meaning…");
+      els.preview.classList.remove("is-visible");
+
+      try {
+        const row = await enrichWord(word);
+        words.push(row);
+        showPreview(row);
+        const result = await persistCsv();
+        csvLoaded = true;
+        updateMeta();
+        setStatus(result.message, "ok");
+        els.input.value = "";
+        els.input.focus();
+      } catch (err) {
+        setStatus(err.message || "Something went wrong.", "err");
+        if (!settings.apiKey) els.settings.open = true;
+      } finally {
+        els.submit.disabled = false;
+      }
+    });
+
+    async function init() {
+      fillSettingsForm();
+      if (!canWriteFile) {
+        els.linkBtn.textContent = "Load existing CSV…";
+      }
+      updateMeta();
+
+      try {
+        const res = await fetch(CSV_URL + "?t=" + Date.now());
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        words = parseCsv(await res.text());
+        csvLoaded = true;
+        setStatus(
+          `Loaded existing data/words.csv (${words.length} words). New words will be appended.` +
+            (canWriteFile
+              ? " Tip: click “Use existing words.csv…” once to write updates into that file directly."
+              : " Saves download an updated full CSV."),
+          "ok"
+        );
+      } catch {
+        csvLoaded = false;
+        setStatus(
+          "No existing data/words.csv found yet. First save will create a new CSV. Or link/load one.",
+          "warn"
+        );
+      }
+      updateMeta();
+      els.input.focus();
+    }
+
+    init();
+  </script>
+</body>
+</html>
