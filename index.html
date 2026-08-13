@@ -289,15 +289,22 @@
       font-weight: 600;
     }
 
-    .controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 0.55rem;
+    .swipe-hint {
+      margin: 0.85rem 0 0;
+      text-align: center;
+      color: rgba(215, 224, 230, 0.65);
+      font-size: 0.88rem;
+      font-weight: 600;
     }
 
-    @media (max-width: 420px) {
-      .controls { grid-template-columns: 1fr 1fr; }
-      .controls #flip-btn { grid-column: 1 / -1; }
+    .card {
+      touch-action: pan-y;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .card.is-dragging .card-inner {
+      transition: none;
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -324,7 +331,7 @@
 
       <div id="empty" class="empty">
         <h1>No cards yet</h1>
-        <p class="lede">Add words with the Flask app, commit <code>data/words.csv</code>, then refresh this page.</p>
+        <p class="lede">Add words on the Add page, commit <code>data/words.csv</code>, then refresh.</p>
       </div>
 
       <div id="error-box" class="error-box">
@@ -339,12 +346,12 @@
       </div>
 
       <div id="deck" class="deck">
-        <button type="button" id="card" class="card" aria-label="Flip card">
+        <button type="button" id="card" class="card" aria-label="Flip card. Swipe for another word.">
           <div class="card-inner">
             <div class="card-face front">
               <span class="face-label">English</span>
               <p id="front-word" class="card-word"></p>
-              <span class="hint">Tap to reveal</span>
+              <span class="hint">Tap to flip · Swipe for next</span>
             </div>
             <div class="card-face back">
               <span class="face-label">繁體中文</span>
@@ -356,37 +363,51 @@
             </div>
           </div>
         </button>
-
-        <div class="controls">
-          <button type="button" id="prev-btn" class="btn ghost">Previous</button>
-          <button type="button" id="flip-btn" class="btn secondary">Flip</button>
-          <button type="button" id="next-btn" class="btn primary">Next</button>
-        </div>
+        <p class="swipe-hint">Swipe left or right for a random word</p>
       </div>
     </section>
   </main>
 
   <script>
     const CSV_URL = "data/words.csv";
+    const SWIPE_THRESHOLD = 56;
 
     const deck = document.getElementById("deck");
     const empty = document.getElementById("empty");
     const errorBox = document.getElementById("error-box");
     const errorMsg = document.getElementById("error-msg");
     const card = document.getElementById("card");
+    const cardInner = card.querySelector(".card-inner");
     const progress = document.getElementById("progress");
     const frontWord = document.getElementById("front-word");
     const backMeaning = document.getElementById("back-meaning");
     const backEn = document.getElementById("back-en");
     const backZh = document.getElementById("back-zh");
-    const prevBtn = document.getElementById("prev-btn");
-    const nextBtn = document.getElementById("next-btn");
-    const flipBtn = document.getElementById("flip-btn");
     const csvFile = document.getElementById("csv-file");
 
     let words = [];
     let index = 0;
     let flipped = false;
+    let seen = 1;
+
+    const pointer = {
+      active: false,
+      id: null,
+      startX: 0,
+      startY: 0,
+      dx: 0,
+      dy: 0,
+      swiped: false,
+    };
+
+    function shuffle(list) {
+      const arr = [...list];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
 
     function parseCsv(text) {
       const rows = [];
@@ -471,39 +492,112 @@
       backMeaning.textContent = w.meaning_zh || "";
       backEn.textContent = w.example_en || "";
       backZh.textContent = w.example_zh || "";
-      progress.textContent = `${index + 1} / ${words.length}`;
+      progress.textContent = `${seen} · ${words.length} cards`;
       setFlipped(false);
+      cardInner.style.transform = "";
     }
 
     function useCsvText(text) {
-      words = parseCsv(text).reverse();
+      words = shuffle(parseCsv(text));
       index = 0;
+      seen = words.length ? 1 : 0;
       render();
     }
 
-    function next() {
+    function randomWord() {
       if (!words.length) return;
-      index = (index + 1) % words.length;
+      if (words.length === 1) {
+        render();
+        return;
+      }
+      let next = index;
+      while (next === index) {
+        next = Math.floor(Math.random() * words.length);
+      }
+      index = next;
+      seen += 1;
       render();
     }
 
-    function prev() {
-      if (!words.length) return;
-      index = (index - 1 + words.length) % words.length;
-      render();
+    function resetDragStyles() {
+      card.classList.remove("is-dragging");
+      cardInner.style.transform = flipped ? "rotateY(180deg)" : "";
+      cardInner.style.opacity = "";
     }
 
-    card.addEventListener("click", () => setFlipped(!flipped));
-    flipBtn.addEventListener("click", () => setFlipped(!flipped));
-    nextBtn.addEventListener("click", next);
-    prevBtn.addEventListener("click", prev);
+    card.addEventListener("pointerdown", (event) => {
+      if (event.button != null && event.button !== 0) return;
+      pointer.active = true;
+      pointer.id = event.pointerId;
+      pointer.startX = event.clientX;
+      pointer.startY = event.clientY;
+      pointer.dx = 0;
+      pointer.dy = 0;
+      pointer.swiped = false;
+      card.classList.add("is-dragging");
+      try {
+        card.setPointerCapture(event.pointerId);
+      } catch (_) {}
+    });
+
+    card.addEventListener("pointermove", (event) => {
+      if (!pointer.active || event.pointerId !== pointer.id) return;
+      pointer.dx = event.clientX - pointer.startX;
+      pointer.dy = event.clientY - pointer.startY;
+
+      if (Math.abs(pointer.dx) > 8 && Math.abs(pointer.dx) > Math.abs(pointer.dy)) {
+        const rot = pointer.dx * 0.04;
+        cardInner.style.transform = `translateX(${pointer.dx}px) rotate(${rot}deg)`;
+        cardInner.style.opacity = String(Math.max(0.45, 1 - Math.abs(pointer.dx) / 280));
+      }
+    });
+
+    function endPointer(event) {
+      if (!pointer.active || event.pointerId !== pointer.id) return;
+      pointer.active = false;
+
+      const absX = Math.abs(pointer.dx);
+      const absY = Math.abs(pointer.dy);
+      const isSwipe = absX >= SWIPE_THRESHOLD && absX > absY;
+
+      if (isSwipe) {
+        pointer.swiped = true;
+        randomWord();
+      } else {
+        resetDragStyles();
+      }
+
+      try {
+        card.releasePointerCapture(event.pointerId);
+      } catch (_) {}
+    }
+
+    card.addEventListener("pointerup", endPointer);
+    card.addEventListener("pointercancel", (event) => {
+      if (!pointer.active || event.pointerId !== pointer.id) return;
+      pointer.active = false;
+      resetDragStyles();
+    });
+
+    card.addEventListener("click", (event) => {
+      if (pointer.swiped) {
+        pointer.swiped = false;
+        event.preventDefault();
+        return;
+      }
+      // Ignore tiny accidental moves counted as clicks after drag reset
+      if (Math.abs(pointer.dx) > 12 || Math.abs(pointer.dy) > 12) {
+        pointer.dx = 0;
+        pointer.dy = 0;
+        return;
+      }
+      setFlipped(!flipped);
+    });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "ArrowRight") {
+      if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
         event.preventDefault();
-        next();
-      } else if (event.key === "ArrowLeft") {
-        prev();
+        randomWord();
       } else if (event.key === " " || event.key === "Enter") {
         event.preventDefault();
         setFlipped(!flipped);
